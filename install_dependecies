@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+brew install conda
+conda env create -f environment.yml
