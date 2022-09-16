@@ -1,4 +1,4 @@
-import pandas as pd
+import numpy as np
 from typing import Union, List
 from enum import Enum
 
@@ -15,17 +15,23 @@ class RuleBasedOrderExecution:
     trade execution
     """
     @staticmethod
-    def higher_lower_flow(y_current_price, y_prediction_price_ahead):
-        if y_prediction_price_ahead > y_current_price:
+    def higher_lower_flow(y_prediction_return_ahead, *args):
+        if y_prediction_return_ahead > 0:
             return OrderType.BUY.value
-        elif y_prediction_price_ahead < y_current_price:
+        elif y_prediction_return_ahead < 0:
             return OrderType.SELL.value
         else:
             return OrderType.HOLD.value
 
     @staticmethod
-    def higher_lower_flow_interval(y_current_price, y_prediction_price_ahead, interval):
-        pass
+    def higher_lower_flow_interval(y_prediction_return_ahead, *args):
+        upper_interval, lower_interval = args
+        if y_prediction_return_ahead > upper_interval:
+            return OrderType.BUY.value
+        elif y_prediction_return_ahead < lower_interval:
+            return OrderType.SELL.value
+        else:
+            return OrderType.HOLD.value
 
 
 class RuleBasedAmountAllocation:
@@ -68,16 +74,17 @@ class Balance:
 class BackTest:
     def __init__(self,
                  balance: Balance,
-                 current_price: pd.Series,
-                 prediction_price_ahead: pd.Series,
+                 current_price: np.array,
+                 prediction_return_ahead: np.array,
                  rule_based_trade_order: callable,
                  rule_based_amount_alloc: Union[callable, float],
                  min_trade_interval: int = 13,
                  bid_ask_spread: Union[float, callable] = 0,
-                 commision: Union[float, callable] = 0):
+                 commision: Union[float, callable] = 0,
+                 *args):
         """
         :param current_price: vector of historical prices
-        :param prediction_price_ahead: vector of predicted prices ahead of current prices by min_trade_interval into future
+        :param prediction_return_ahead: vector of predicted prices ahead of current prices by min_trade_interval into future
         :param rule_based_trade_order: the logic which is used to execute trade order
         :param rule_based_amount_value: the logic which is used to allocate trade amount, could be const or based
         on signal strength or utility function
@@ -87,18 +94,19 @@ class BackTest:
         """
         self.balance = balance
         self.current_price = current_price
-        self.prediction_price_ahead = prediction_price_ahead
+        self.prediction_return_ahead = prediction_return_ahead
         self.rule_based_trade_order = rule_based_trade_order
         self.rule_based_amount_alloc = rule_based_amount_alloc
         self.min_trade_interval = min_trade_interval
         self.bid_ask_spread = bid_ask_spread
         self.commision = commision
+        self.arguments_rules_based_order = args
 
     def create_order_flow(self) -> List:
         order_flow = []
-        for i, (y_current_price, y_pred_price_ahead) in enumerate(zip(self.current_price, self.prediction_price_ahead)):
+        for i,  y_pred_return_ahead in enumerate(self.prediction_return_ahead):
             if i % self.min_trade_interval == 0:
-                order_flow.append(self.rule_based_trade_order(y_current_price, y_pred_price_ahead))
+                order_flow.append(self.rule_based_trade_order(y_pred_return_ahead, *self.arguments_rules_based_order))
             else:
                 order_flow.append(OrderType.HOLD.value)
         return order_flow
@@ -113,7 +121,7 @@ class BackTest:
                 alloc_amount = 0
             try:
                 price_ahead = self.current_price[curr_index_price + self.min_trade_interval]
-            except KeyError:
+            except IndexError:
                 break
             # assert self.current_price[curr_index_price] == alloc_price, "Oops, price mistmatch"
             if order_type == 1:
