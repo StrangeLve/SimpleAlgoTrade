@@ -1,6 +1,10 @@
 import numpy as np
 from typing import Union, List
 from enum import Enum
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy import stats
+import tqdm
 
 
 class OrderType(Enum):
@@ -139,11 +143,33 @@ class BackTest:
                 self.balance.update(0)
 
 
-class PortfolioStats:
-    def __init__(self, balance: Balance):
-        self.balance_history = balance.balance_history
-        self.pnl_history = balance.pnl_history
-#         Need number of trades on average
+def plot_cumulative_time_per_trade(order_flow, time_index):
+    cumulative_time_per_trade = [1]
+    start_time = time_index[0]
+    for order, cur_time in zip(order_flow, time_index):
+        if order != 0:
+            cumulative_time_per_trade.append((cur_time - start_time) / len(cumulative_time_per_trade))
+    cumulative_time_per_trade = cumulative_time_per_trade[1:]
+    total_time_in_seconds = (time_index[-1] - time_index[0])
+    number_of_trades = np.sum(pd.Series(order_flow) != 0)
+    plt.plot(cumulative_time_per_trade)
+    plt.axhline(total_time_in_seconds / number_of_trades, color='r', label="Average")
+    plt.title('cumulative time per trade in seconds')
+    plt.ylabel('time in seconds')
+    plt.legend()
+
+
+def bootstrap_pnl(pnl_series, boostrap_frac: float, bootstrap_round: int):
+    average_pnl = []
+    for _ in tqdm.tqdm(range(bootstrap_round)):
+        average_pnl.append(np.mean(pnl_series.sample(frac=boostrap_frac, replace=True)))
+    t_score, p_val = stats.ttest_1samp(average_pnl, popmean=0)
+    avg = np.mean(average_pnl)
+    plt.hist(average_pnl, bins=int(bootstrap_round/10))
+    plt.title("Bootstrapped Avg PnL")
+    plt.axvline(avg, color='r',label = f"avg val {avg}, t_test: {t_score}, p_val: {p_val}")
+    plt.legend()
+    return average_pnl
 
 
 
