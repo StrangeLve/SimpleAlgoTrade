@@ -153,7 +153,7 @@ def plot_cumulative_time_per_trade(order_flow, time_index):
     total_time_in_seconds = (time_index[-1] - time_index[0])
     number_of_trades = np.sum(pd.Series(order_flow) != 0)
     plt.plot(cumulative_time_per_trade)
-    plt.axhline(total_time_in_seconds / number_of_trades, color='r', label="Average")
+    plt.axhline(total_time_in_seconds / number_of_trades, color='r', label=f"Average {total_time_in_seconds / number_of_trades}")
     plt.title('cumulative time per trade in seconds')
     plt.ylabel('time in seconds')
     plt.legend()
