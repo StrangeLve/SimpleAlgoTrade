@@ -70,6 +70,11 @@ class Balance:
     def balance_current(self):
         return self._balance[-1]
 
+    @property
+    def count_winning_directions(self):
+        return np.array(self.pnl_history) > 0
+
+
 
 class BackTest:
     def __init__(self,
@@ -79,6 +84,7 @@ class BackTest:
                  rule_based_trade_order: callable,
                  rule_based_amount_alloc: Union[callable, float],
                  min_trade_interval: int = 13,
+                 pred_trade_interval: int = 13,
                  bid_ask_spread: Union[float, callable] = 0,
                  commision: Union[float, callable] = 0,
                  *args):
@@ -98,6 +104,7 @@ class BackTest:
         self.rule_based_trade_order = rule_based_trade_order
         self.rule_based_amount_alloc = rule_based_amount_alloc
         self.min_trade_interval = min_trade_interval
+        self.pred_trade_interval = pred_trade_interval
         self.bid_ask_spread = bid_ask_spread
         self.commision = commision
         self.arguments_rules_based_order = args
@@ -120,7 +127,7 @@ class BackTest:
             else:
                 alloc_amount = 0
             try:
-                price_ahead = self.current_price[curr_index_price + self.min_trade_interval]
+                price_ahead = self.current_price[curr_index_price + self.pred_trade_interval]
             except IndexError:
                 break
             # assert self.current_price[curr_index_price] == alloc_price, "Oops, price mistmatch"
