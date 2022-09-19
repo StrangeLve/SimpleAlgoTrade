@@ -28,7 +28,7 @@ The Cross-Validation Result:
 
 1) The model has high variance, meaning that the performance on in-sample data
 is highly better than on out-of-sample data. There exist certain indication, that
-bigger sample size might decrease variance
+bigger sample size might decrease the variance
 2) The model produces out-of-sample result which demonstrates a martingale 
    process such that E[X_{n+1}|F_n] = X_{n}
 3) The model interpretation using partial dependency did not reveals strong 
@@ -37,6 +37,8 @@ bigger sample size might decrease variance
 
 The Back-Test Result:
 
+1) Back testing on in-sample data set provides strong positive PnL
+2) Back testing on out-of-sample data set does not provide a better result than random prediction
 
 What can be improved:
 1) Fetch more Data
